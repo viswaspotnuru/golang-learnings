@@ -7,16 +7,6 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-    <!-- Chosen Palette: Warm Neutrals with Teal, Rose, and Indigo Accents -->
-    <!-- Application Structure Plan: The SPA uses a tabbed dashboard structure to break down complex technical topics. "Overview" provides a high-level strategic view of interview priorities. "Deep Dives" acts as an interactive accordion-based study guide, allowing users to focus on one topic at a time. "Performance Data" isolates quantitative metrics into visual charts to prove the concepts taught in the text. -->
-    <!-- Visualization & Content Choices: 
-         1. Topic Priority: Bubble Chart (Chart.js) to prioritize study time based on frequency/difficulty.
-         2. Map Buckets / OOP Models: HTML/CSS layouts to visually represent buckets and worker/manager relationships without SVG.
-         3. Slice Capacity Growth: Line/Bar combo chart (Chart.js) to prove memory reallocation rules.
-         4. Lock Contention: Grouped Bar Chart (Chart.js) comparing Mutex vs sync.Map.
-    -->
-    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
-
     <style>
         .chart-container {
             position: relative;
@@ -51,6 +41,9 @@
         .accordion-active .chevron {
             transform: rotate(180deg);
         }
+        /* Simulation Styles */
+        .g-card { transition: all 0.5s ease; }
+        .parked { filter: grayscale(1); opacity: 0.6; }
     </style>
 </head>
 <body class="bg-[#faf9f6] text-stone-800 font-sans antialiased">
@@ -63,14 +56,15 @@
                 <p class="text-stone-500 mt-1">Deep-Dive System Architecture, Concurrency & Design</p>
             </div>
             <div class="flex space-x-2 bg-stone-100 p-1 rounded-lg">
-                <button onclick="app.switchTab('overview')" id="tab-overview" class="px-4 py-2 rounded-md text-sm font-medium transition-colors bg-white text-teal-700 shadow-sm">Overview</button>
+                <button onclick="app.switchTab('overview')" id="tab-overview" class="px-4 py-2 rounded-md text-sm font-medium transition-colors bg-white text-teal-700 shadow-sm border border-stone-200">Overview</button>
                 <button onclick="app.switchTab('concepts')" id="tab-concepts" class="px-4 py-2 rounded-md text-sm font-medium transition-colors text-stone-600 hover:text-stone-900">Deep Dives</button>
                 <button onclick="app.switchTab('performance')" id="tab-performance" class="px-4 py-2 rounded-md text-sm font-medium transition-colors text-stone-600 hover:text-stone-900">Performance Data</button>
+                <button onclick="app.switchTab('simulation')" id="tab-simulation" class="px-4 py-2 rounded-md text-sm font-medium transition-colors text-stone-600 hover:text-stone-900">Simulation</button>
             </div>
         </header>
 
         <main>
-            
+            <!-- OVERVIEW TAB -->
             <section id="section-overview" class="block animate-fade-in">
                 <div class="mb-8">
                     <h2 class="text-2xl font-semibold text-stone-800 mb-3">Strategic Study Focus</h2>
@@ -105,10 +99,10 @@
                 </div>
             </section>
 
-            
+            <!-- CONCEPTS TAB -->
             <section id="section-concepts" class="hidden animate-fade-in">
                 <div class="mb-8">
-                    <h2 class="text-2xl font-semibold text-stone-800 mb-3">Concept Deep Dives (Questions 1-11)</h2>
+                    <h2 class="text-2xl font-semibold text-stone-800 mb-3">Concept Deep Dives (Questions 1-16)</h2>
                     <p class="text-stone-600 leading-relaxed max-w-3xl">
                         Explore the detailed mechanics of Go's core primitives. This interactive explorer provides architectural context, explicit warnings about production pitfalls, and translates traditional OOP concepts (like Python's Duck Typing) into the "Go Way".
                     </p>
@@ -116,7 +110,7 @@
                 <div id="accordion-container" class="space-y-4"></div>
             </section>
 
-            
+            <!-- PERFORMANCE TAB -->
             <section id="section-performance" class="hidden animate-fade-in">
                 <div class="mb-8">
                     <h2 class="text-2xl font-semibold text-stone-800 mb-3">Architectural Impacts</h2>
@@ -146,6 +140,51 @@
                         <p class="text-xs text-stone-500 mt-4 leading-tight">
                             <strong>Takeaway:</strong> <code>sync.Map</code> is terrible for constant overwrites of the same key due to internal synchronization overhead. Use it only for append-only data or disjoint keys.
                         </p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SIMULATION TAB -->
+            <section id="section-simulation" class="hidden animate-fade-in">
+                <div class="mb-8">
+                    <h2 class="text-2xl font-semibold text-stone-800 mb-3">Goroutine & NetPoller Simulation</h2>
+                    <p class="text-stone-600 leading-relaxed max-w-3xl">
+                        Visualizing how Goroutines yield the OS thread during I/O operations (like database queries). Instead of blocking the expensive OS thread, the Goroutine is "parked" while the NetPoller waits for data, allowing the thread to instantly pick up other work.
+                    </p>
+                </div>
+
+                <div class="bg-slate-900 p-6 md:p-8 rounded-2xl shadow-xl border border-slate-700 text-slate-200 max-w-4xl mx-auto">
+                    <div class="flex justify-between items-center mb-6 border-b border-slate-700 pb-4">
+                        <h3 class="text-xl font-bold text-blue-400">G-M-P Scheduler Live Execution</h3>
+                        <button id="toggleBtn" class="bg-blue-600 hover:bg-blue-500 px-6 py-2 rounded text-sm font-semibold transition shadow-lg hover:shadow-blue-500/50">Execute DB Query</button>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-12 items-center min-h-[16rem] bg-slate-950 rounded-xl p-6 border border-slate-800 shadow-inner">
+                        <!-- Threads -->
+                        <div id="threadArea" class="flex flex-col gap-4">
+                            <p class="text-xs text-slate-500 uppercase tracking-widest font-bold">Physical Execution</p>
+                            <div class="p-6 bg-slate-800 border-2 border-blue-500 rounded-lg text-center text-sm font-mono shadow-md relative overflow-hidden">
+                                <div class="absolute inset-0 bg-blue-500/10 animate-pulse"></div>
+                                <span class="relative z-10 font-bold text-blue-300 text-lg">OS Thread (M1)</span>
+                            </div>
+                        </div>
+
+                        <!-- Goroutines -->
+                        <div id="goroutineArea" class="flex justify-center gap-8">
+                            <div class="text-center group">
+                                <div id="g1" class="g-card w-20 h-20 bg-emerald-500 flex items-center justify-center rounded-full font-bold text-slate-900 shadow-[0_0_15px_rgba(16,185,129,0.5)] text-xl border-4 border-emerald-400">G1</div>
+                                <span class="text-sm mt-3 block font-medium text-emerald-400">Processing</span>
+                            </div>
+                            <div class="text-center group">
+                                <div id="g2" class="g-card w-20 h-20 bg-emerald-500 flex items-center justify-center rounded-full font-bold text-slate-900 shadow-lg text-xl border-4 border-slate-700 opacity-40">G2</div>
+                                <span class="text-sm mt-3 block font-medium text-slate-500">Queued</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="statusMsg" class="mt-8 p-4 bg-slate-950 rounded-lg border border-slate-800 text-blue-300 text-sm font-mono flex items-start gap-3">
+                        <span class="text-blue-500">❯</span>
+                        <span>System Idle. Waiting for trigger...</span>
                     </div>
                 </div>
             </section>
@@ -619,7 +658,7 @@ for _, m := range metrics {
                             <h4 class="font-bold text-amber-900 mb-2 text-lg">Analogy: The House and the GPS</h4>
                             <ul class="text-sm text-amber-800 list-disc pl-5 space-y-2">
                                 <li>Think of a variable as a <strong>House</strong>.</li>
-                                <li><strong><code class="bg-amber-100 px-1 rounded">&</code> (Ampersand):</strong> Means <em>"Find the Address of this House"</em> (e.g., 123 Main St).</li>
+                                <li><strong><code class="bg-amber-100 px-1 rounded">&amp;</code> (Ampersand):</strong> Means <em>"Find the Address of this House"</em> (e.g., 123 Main St).</li>
                                 <li><strong><code class="bg-amber-100 px-1 rounded">*</code> (Asterisk):</strong> Means <em>"This variable holds an Address (a GPS)"</em> OR <em>"Drive to this Address and open the front door."</em></li>
                             </ul>
                         </div>
@@ -632,7 +671,7 @@ for _, m := range metrics {
 // The Constructor returns a GPS address (*Server)
 func NewServer(port int) *Server {
     s := Server{Port: port}
-    return &s // Returns the address! Safe due to Escape Analysis.
+    return &amp;s // Returns the address! Safe due to Escape Analysis.
 }
 
 func ConnectDB(s *Server) {
@@ -661,6 +700,141 @@ func ConnectDB(s *Server) {
                         </div>
                     </div>
                 `
+            },
+            {
+                id: 'q12',
+                title: "12. Errors as Values vs. Exceptions",
+                category: "Design Patterns",
+                content: `
+                    <div class="mb-6">
+                        <h4 class="font-bold text-rose-900 mb-2 text-lg">Analogy: The Bomb vs. The Receipt</h4>
+                        <p class="text-stone-700 leading-relaxed mb-4">In Python or Java, exceptions are like <strong>bombs</strong>. They explode up the call stack until caught, or they crash the program. In Go, an error is a <strong>Return Receipt</strong>. It's just a piece of data handed back to you alongside your result. You are expected to check the receipt immediately.</p>
+                    </div>
+
+                    <h4 class="font-semibold text-stone-900 mb-2">Code Example: Idiomatic Error Handling</h4>
+                    <p class="text-sm text-stone-600 mb-3">Go uses multiple return values to explicitly state: "This function might fail, you must handle the result." We use <code>fmt.Errorf</code> with the <code>%w</code> verb to wrap errors, building a contextual breadcrumb trail.</p>
+                    <pre class="bg-stone-900 text-stone-100 p-4 rounded-lg text-sm font-mono overflow-x-auto"><code>func CreateTransaction() error {
+    err := DatabaseSave()
+    if err != nil {
+        // Wrap the original error with more context
+        return fmt.Errorf("could not create transaction: %w", err)
+    }
+    return nil
+}</code></pre>
+                `
+            },
+            {
+                id: 'q13',
+                title: "13. The Trap: Nil Pointers vs. Nil Interfaces",
+                category: "Memory & Types",
+                content: `
+                    <div class="mb-6">
+                        <p class="text-stone-700 leading-relaxed mb-4"><strong>The Tuple Secret:</strong> Under the hood, an interface in Go is a tuple of two things: <code>(Type, Value)</code>. An interface is <strong>ONLY considered nil if BOTH the Type and Value are nil.</strong></p>
+                        
+                        <div class="bg-amber-50 border border-amber-200 p-5 rounded-xl shadow-sm mb-4">
+                            <h4 class="font-bold text-amber-900 mb-2">The Billion Dollar Mistake</h4>
+                            <p class="text-sm text-amber-800">If you return a typed pointer (like <code>*MyError</code>) that happens to be <code>nil</code>, the interface becomes <code>(*MyError, nil)</code>. Because the <em>Type</em> is not nil, <code>if err != nil</code> will evaluate to <strong>true</strong>, tricking your program into thinking an error occurred when everything was actually fine!</p>
+                        </div>
+                    </div>
+
+                    <h4 class="font-semibold text-stone-900 mb-2">Code Example: Returning an Untyped Nil</h4>
+                    <p class="text-sm text-stone-600 mb-3">Always return explicit untyped <code>nil</code> keyword when returning an interface.</p>
+                    <pre class="bg-stone-900 text-stone-100 p-4 rounded-lg text-sm font-mono overflow-x-auto"><code>type MyError struct {}
+func (e *MyError) Error() string { return "error" }
+
+func DoWork() error {
+    var errPtr *MyError = nil
+    
+    // ❌ WRONG: Returns (*MyError, nil) which is NOT a nil interface!
+    // return errPtr 
+    
+    // ✅ RIGHT: Return explicit untyped nil. Interface becomes (<nil>, <nil>)
+    if errPtr == nil {
+        return nil 
+    }
+    return errPtr
+}</code></pre>
+                `
+            },
+            {
+                id: 'q14',
+                title: "14. Enforcing Immutable Data Structures",
+                category: "Design Patterns",
+                content: `
+                    <div class="mb-6">
+                        <p class="text-stone-700 leading-relaxed mb-4">Unlike Java's <code>final</code> or Python's <code>@dataclass(frozen=True)</code>, Go has no keyword for immutability. Instead, we use <strong>Compiler-Enforced Encapsulation</strong>.</p>
+
+                        <div class="bg-indigo-50 border border-indigo-200 p-5 rounded-xl shadow-sm mb-4">
+                            <p class="text-sm text-indigo-800">In Go, fields starting with a lowercase letter are strictly private to the package. By pairing <strong>lowercase fields</strong> with <strong>uppercase Getter methods</strong>, you create a struct that is physically locked in memory once initialized. No developer can accidentally overwrite the data.</p>
+                        </div>
+                    </div>
+
+                    <h4 class="font-semibold text-stone-900 mb-2">Code Example: The Immutable Config</h4>
+                    <pre class="bg-stone-900 text-stone-100 p-4 rounded-lg text-sm font-mono overflow-x-auto"><code>package config
+
+// 1. Lowercase fields: Strictly private to this package
+type AppConfig struct {
+    port int
+}
+
+func LoadConfig() AppConfig {
+    return AppConfig{port: 8080}
+}
+
+// 2. Uppercase getter: Publicly accessible, but returns a copy
+func (c AppConfig) Port() int {
+    return c.port
+}</code></pre>
+                `
+            },
+            {
+                id: 'q15',
+                title: "15. Understanding context.Context",
+                category: "Concurrency",
+                content: `
+                    <div class="mb-6">
+                        <h4 class="font-bold text-teal-900 mb-2 text-lg">Analogy: The Restaurant Walkie-Talkie</h4>
+                        <p class="text-stone-700 leading-relaxed mb-4">Imagine a waiter gives the kitchen a walkie-talkie when placing a complex order. If the customer suddenly leaves the restaurant, the waiter pushes the "Cancel" button. The kitchen hears it and instantly stops cooking to save resources. <code>context.Context</code> is that walkie-talkie, passed down every call stack.</p>
+                        
+                        <p class="text-stone-700 leading-relaxed mb-4">If a user closes their browser tab mid-request, the server pushes "cancel." Frameworks like <strong>GORM</strong> or the standard HTTP client hear the <code>&lt;-ctx.Done()</code> signal and instantly sever the database/network connection. This prevents <strong>"Ghost Requests"</strong> from overwhelming your database.</p>
+                    </div>
+
+                    <h4 class="font-semibold text-stone-900 mb-2">Code Example: Passing the Context</h4>
+                    <pre class="bg-stone-900 text-stone-100 p-4 rounded-lg text-sm font-mono overflow-x-auto"><code>// Golden Rule: Always pass the context down to the DB or Network call
+func GetUser(ctx context.Context, id int) (User, error) {
+    var user User
+    // GORM will automatically listen for ctx cancellation!
+    result := db.WithContext(ctx).First(&amp;user, id)
+    return user, result.Error
+}</code></pre>
+                `
+            },
+            {
+                id: 'q16',
+                title: "16. Goroutines, OS Threads & The NetPoller",
+                category: "Concurrency",
+                content: `
+                    <div class="mb-6">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                            <div class="bg-stone-50 border border-stone-200 p-5 rounded-xl shadow-sm">
+                                <h4 class="font-bold text-stone-900 mb-2">OS Threads (The Heavy Worker)</h4>
+                                <p class="text-sm text-stone-700">Managed by the OS. Heavy (1MB+ stack). Slow context switching. Trying to spawn 10,000 threads will crash most servers.</p>
+                            </div>
+                            <div class="bg-blue-50 border border-blue-200 p-5 rounded-xl shadow-sm">
+                                <h4 class="font-bold text-blue-900 mb-2">Goroutines (The Lightweight Task)</h4>
+                                <p class="text-sm text-blue-800">Managed by the Go Runtime. Tiny (2KB stack). A standard laptop can easily juggle millions of them simultaneously.</p>
+                            </div>
+                        </div>
+                        
+                        <h4 class="font-bold text-stone-900 mb-2 text-lg">M:N Scheduling & The NetPoller</h4>
+                        <p class="text-stone-700 leading-relaxed">Go maps millions of Goroutines (M) onto a tiny pool of OS Threads (N). When a Goroutine makes a database call, it doesn't block the thread! The Goroutine is "parked" in memory, yielding control to the background <strong>NetPoller</strong>, and the OS Thread immediately starts executing the next Goroutine.</p>
+                        
+                        <div class="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-100 flex items-center justify-between">
+                            <span class="text-blue-800 font-medium text-sm">See this live in the Simulation tab!</span>
+                            <button onclick="app.switchTab('simulation')" class="px-3 py-1.5 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 transition">View Simulation</button>
+                        </div>
+                    </div>
+                `
             }
         ];
 
@@ -673,10 +847,11 @@ func ConnectDB(s *Server) {
             init() {
                 this.renderAccordion();
                 this.renderOverviewChart();
+                this.initSimulation();
             },
 
             switchTab(tabId) {
-                ['overview', 'concepts', 'performance'].forEach(id => {
+                ['overview', 'concepts', 'performance', 'simulation'].forEach(id => {
                     const btn = document.getElementById(`tab-${id}`);
                     if(id === tabId) {
                         btn.classList.remove('bg-white', 'text-teal-600', 'hover:text-teal-900');
@@ -731,6 +906,44 @@ func ConnectDB(s *Server) {
                 });
 
                 parent.classList.toggle('accordion-active');
+            },
+
+            initSimulation() {
+                const btn = document.getElementById('toggleBtn');
+                const g1 = document.getElementById('g1');
+                const msg = document.getElementById('statusMsg');
+
+                if(!btn || !g1 || !msg) return;
+
+                btn.addEventListener('click', () => {
+                    btn.disabled = true;
+                    msg.innerHTML = "<span class='text-blue-500'>❯</span> <span>G1: Executing DB Call (syscall)...</span>";
+                    
+                    setTimeout(() => {
+                        g1.classList.add('parked');
+                        msg.innerHTML = "<span class='text-blue-500'>❯</span> <span class='text-purple-400'>G1: Parking! Thread M1 is now free to pick up G2.</span>";
+                        
+                        const g2 = document.getElementById('g2');
+                        g2.classList.replace('bg-emerald-500', 'bg-purple-500');
+                        g2.classList.replace('opacity-40', 'opacity-100');
+                        g2.nextElementSibling.innerText = "Processing";
+                        g2.nextElementSibling.classList.replace('text-slate-500', 'text-purple-400');
+                        
+                        setTimeout(() => {
+                            msg.innerHTML = "<span class='text-blue-500'>❯</span> <span class='text-amber-400'>NetPoller: Data arrived from DB! Waking up G1...</span>";
+                            setTimeout(() => {
+                                g1.classList.remove('parked');
+                                g2.classList.replace('bg-purple-500', 'bg-emerald-500');
+                                g2.classList.replace('opacity-100', 'opacity-40');
+                                g2.nextElementSibling.innerText = "Queued";
+                                g2.nextElementSibling.classList.replace('text-purple-400', 'text-slate-500');
+                                
+                                msg.innerHTML = "<span class='text-blue-500'>❯</span> <span class='text-emerald-400'>G1: Resumed and processing DB response.</span>";
+                                btn.disabled = false;
+                            }, 2000);
+                        }, 2500);
+                    }, 1500);
+                });
             },
 
             renderOverviewChart() {
