@@ -108,7 +108,7 @@
             
             <section id="section-concepts" class="hidden animate-fade-in">
                 <div class="mb-8">
-                    <h2 class="text-2xl font-semibold text-stone-800 mb-3">Concept Deep Dives (Questions 1-10)</h2>
+                    <h2 class="text-2xl font-semibold text-stone-800 mb-3">Concept Deep Dives (Questions 1-11)</h2>
                     <p class="text-stone-600 leading-relaxed max-w-3xl">
                         Explore the detailed mechanics of Go's core primitives. This interactive explorer provides architectural context, explicit warnings about production pitfalls, and translates traditional OOP concepts (like Python's Duck Typing) into the "Go Way".
                     </p>
@@ -605,6 +605,61 @@ for _, m := range metrics {
         highMetrics = append(highMetrics, m)
     }
 }</code></pre>
+                `
+            },
+            {
+                id: 'q11',
+                title: "11. Pointers, Addresses & Struct Syntactic Sugar",
+                category: "Memory & Types",
+                content: `
+                    <div class="mb-6">
+                        <p class="text-stone-700 leading-relaxed mb-4"><strong>The Golden Rule:</strong> In Go, everything is passed by value (copied) by default. If you want a function to modify your original variable, you must give it the <strong>Address</strong> of where your variable lives in memory.</p>
+
+                        <div class="bg-amber-50 border border-amber-200 p-5 rounded-xl shadow-sm mb-4">
+                            <h4 class="font-bold text-amber-900 mb-2 text-lg">Analogy: The House and the GPS</h4>
+                            <ul class="text-sm text-amber-800 list-disc pl-5 space-y-2">
+                                <li>Think of a variable as a <strong>House</strong>.</li>
+                                <li><strong><code class="bg-amber-100 px-1 rounded">&</code> (Ampersand):</strong> Means <em>"Find the Address of this House"</em> (e.g., 123 Main St).</li>
+                                <li><strong><code class="bg-amber-100 px-1 rounded">*</code> (Asterisk):</strong> Means <em>"This variable holds an Address (a GPS)"</em> OR <em>"Drive to this Address and open the front door."</em></li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <h4 class="font-bold text-stone-900 mb-2">1. Passing & Returning Addresses (Escape Analysis)</h4>
+                    <p class="text-sm text-stone-600 mb-3">When returning an address from a local function, Go uses <strong>Escape Analysis</strong> to safely move the variable from the temporary Stack to the permanent Heap, preventing dangling pointers.</p>
+                    <pre class="bg-stone-900 text-stone-100 p-4 rounded-lg text-sm font-mono overflow-x-auto mb-6"><code>type Server struct { Port int }
+
+// The Constructor returns a GPS address (*Server)
+func NewServer(port int) *Server {
+    s := Server{Port: port}
+    return &s // Returns the address! Safe due to Escape Analysis.
+}
+
+func ConnectDB(s *Server) {
+    s.Port = 8080 // Modifies the real house!
+}</code></pre>
+
+                    <h4 class="font-bold text-stone-900 mb-2">2. The Big Confusion: Asterisks and Syntactic Sugar</h4>
+                    <p class="text-sm text-stone-600 mb-3">If <code>p</code> is a pointer, why do we sometimes write <code>*p = 2</code> and sometimes just <code>user.Age = 2</code>? <strong>Syntactic Sugar.</strong></p>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
+                        <div class="bg-white border border-stone-200 p-4 rounded-xl shadow-sm">
+                            <h5 class="font-bold text-stone-900 mb-2">Primitive Pointers</h5>
+                            <p class="text-xs text-stone-600 mb-2">No magic. You MUST use <code>*</code> to tell Go to look inside the address.</p>
+                            <pre class="bg-stone-900 text-stone-100 p-3 rounded-lg text-xs font-mono overflow-x-auto"><code>func DoubleInt(p *int) {
+    // You MUST dereference with *
+    *p = *p * 2 
+}</code></pre>
+                        </div>
+                        <div class="bg-white border border-stone-200 p-4 rounded-xl shadow-sm">
+                            <h5 class="font-bold text-stone-900 mb-2">Struct Pointers</h5>
+                            <p class="text-xs text-stone-600 mb-2">Go lets you be lazy. The compiler silently adds the <code>*</code> for you!</p>
+                            <pre class="bg-stone-900 text-stone-100 p-3 rounded-lg text-xs font-mono overflow-x-auto"><code>func DoubleAge(u *User) {
+    // NO asterisk needed! 
+    // Go silently translates this to: (*u).Age
+    u.Age = u.Age * 2 
+}</code></pre>
+                        </div>
+                    </div>
                 `
             }
         ];
